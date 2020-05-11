@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:jms="http://www.springframework.org/schema/jms"
+	xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:int-jms="http://www.springframework.org/schema/integration/jms"
+	xsi:schemaLocation="http://www.springframework.org/schema/jms http://www.springframework.org/schema/jms/spring-jms-4.3.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration/jms http://www.springframework.org/schema/integration/jms/spring-integration-jms-5.2.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-5.2.xsd">
+
+	<bean id="connectionFactory" class="org.springframework.jms.connection.CachingConnectionFactory">
+		<property name="targetConnectionFactory">
+			<bean class="org.apache.activemq.ActiveMQConnectionFactory">
+				<property name="brokerURL" value="tcp://localhost:61616"/>
+			</bean>
+		</property>
+	</bean>
+	
+	<bean id="queue" class="org.apache.activemq.command.ActiveMQQueue" >
+		<constructor-arg value="sample.queue" />
+	</bean>
+	<bean id="queue1" class="org.apache.activemq.command.ActiveMQQueue" >
+		<constructor-arg value="sample.queue" />
+	</bean>
+	
+	<int:channel id="inboundChannel" />
+	
+	<int-jms:outbound-channel-adapter 
+		connection-factory="connectionFactory"
+		channel="outboundChannel"
+		destination="queue">
+	</int-jms:outbound-channel-adapter>
+	
+	<int:object-to-string-transformer input-channel="inboundChannel" output-channel="outboundChannel" />
+	
+	<int:channel id="outboundChannel" />
+	
+	<int:gateway id="personGateway" service-interface="com.pinoyjavatech.sample.PersonGateway">
+		<int:method name="send" request-channel="inboundChannel" />
+	</int:gateway>
+	
+	<bean id="printService" class="com.pinoyjavatech.sample.PrintService" />
+	<int:service-activator input-channel="outboundChannel" ref="printService" method="printStr" />
+<!-- 	<int:service-activator input-channel="jmsChannel" ref="printService" method="printRecieved" /> -->
+	
+<!-- 	<int:channel id="jmsChannel" /> -->
+<!-- 	<int-jms:inbound-channel-adapter -->
+<!-- 		connection-factory="connectionFactory" -->
+<!-- 		channel="jmsChannel" -->
+<!-- 		destination="queue1"> -->
+<!-- 		<int:poller fixed-rate="3" time-unit="SECONDS" /> -->
+<!-- 	</int-jms:inbound-channel-adapter> -->
+	
+</beans>
